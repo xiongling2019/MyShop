@@ -1,0 +1,376 @@
+<html>
+<head>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="css/bootstrap.css">
+    <script src="js/jquery-3.3.1.js"></script>
+    <script src="js/bootstrap.js"></script>
+    <title>商城后台管理</title>
+    <script>
+        function viewUser(url){
+            $.getJSON(url,function(data){
+                $("#data-tb tbody").remove();
+                tbody=$("<tbody>")
+                $.each(data,function(index,user){
+                    tr=$("<tr>").append($("<td>").text(user.usersId))
+                                 .append($("<td>").text(user.username))
+                                 .append($("<td>").text(user.role.roleName));
+                    tdc=$("<td>").html('<a href="javascript:void(0)" onclick="deleteUser(this)">删除</a>&nbsp;' +
+                                       '<a href="javascript:void(0)" onclick="updateUser(this)">修改</a>&nbsp;'+
+                                       '<a href="javascript:void(0)" onclick="shopquan(this)">授权</a>');
+                    tr.append(tdc);
+                    tbody.append(tr);
+                });
+                $("#data-tb").append(tbody);
+                /*button=$("<button>").html('<a href="javascript:void(0)" onclick="addUserBtn()">添加用户</a>');*/
+                $(".panel-body").append(button)
+            });
+        }
+
+        /*function viewUser(url){
+            $.ajax({
+                url:url,
+                async: false,
+                method : 'POST',
+                success:function (data) {
+                    $("#data-tb tbody").remove();
+                    tbody=$("<tbody>")
+                    $.each(data,function(index,user){
+                        tr=$("<tr>").append($("<td>").text(user.usersId))
+                            .append($("<td>").text(user.username))
+                            .append($("<td>").text(user.role.roleName));
+                        tdc=$("<td>").html('<a href="javascript:void(0)" onclick="deleteUser(this)">删除</a>&nbsp;' +
+                            '<a href="javascript:void(0)" onclick="updateUser(this)">修改</a>&nbsp;'+
+                            '<a href="javascript:void(0)" onclick="shopquan(this)">授权</a>');
+                        tr.append(tdc);
+                        tbody.append(tr);
+                    });
+                    $("#data-tb").append(tbody);
+                    /!*button=$("<button>").html('<a href="javascript:void(0)" onclick="addUserBtn()">添加用户</a>');*!/
+                    $(".panel-body").append(button)
+                }
+            })
+        }*/
+
+        function addUser(url){
+            $("#saveUser").show()
+            $("#conSave").click(function(){
+                $.ajax({
+                    url : url,
+                    /*processData:false,
+                    contentType:false,*/
+                    method : 'POST',
+                    data : $("#form").serialize(),
+                    success : function(data) {
+                        alert("添加成功")
+                        $("#saveUser").hide();
+                        viewUser();
+                    }
+                });
+            })
+        }
+
+        /*function addUserBtn(){
+            $("#saveUser").show();
+            $("#conSave").click(function(){
+                $.ajax({
+                    url : 'user/addUser',
+                    method : 'POST',
+                    data : $("#form").serialize(),
+                    success : function(data) {
+                        alert("添加成功")
+                        $("#saveUser").hide();
+                        viewUser();
+                    }
+                });
+            })
+        }
+*/
+        function deleteUser(aEl) {
+            var usersId=$(aEl).parent().parent().find("td:first").eq(0).text();
+            alert(usersId)
+            $.ajax({
+                url:'user/deleteUser',
+                data:{'usersId':usersId},
+                success:function(data){
+                    alert("删除成功")
+                    viewUser();
+                }
+            });
+        }
+
+        function updateUser(aEl){
+            var usersId=$(aEl).parent().parent().find("td").eq(0).text();
+            $("#usersId").val(usersId);
+            var username=$(aEl).parent().parent().find("td").eq(1).text();
+            $("#updateUsername").val(username);
+            $("#updateUser").show();
+            $("#conUpdate").click(function () {
+                $.ajax({
+                    url : 'user/updateUser',
+                    method : 'POST',
+                    data : $("#upForm").serialize(),
+                    success : function(data) {
+                        alert("修改成功");
+                        $("#updateUser").hide();
+                        viewUser();
+                    }
+                });
+            })
+        }
+
+        function cancelBtn(){
+            $("#saveUser").hide();
+            $("#updateUser").hide();
+        }
+
+        $(function(){
+            $.getJSON("user/getUserInfo",
+                function(data){
+                    $("#username").text(data.username);
+                    $.getJSON("user/getMenu",
+                        {"usersId":data.usersId},
+                        function(permissions){
+
+                          /* $("#shouye").text(permissions.name);*/
+                            parentPermissions=new Array();
+                            childPermissions=new Array();
+                            $.each(permissions,function(index,permission){
+                                if(permission.isParent=="true" && permission.pId!=null){
+                                    parentPermissions.push(permission);
+                                }else {
+                                    childPermissions.push(permission);
+                                }
+                            });
+                            $.each(parentPermissions,function(i,parentP){
+                                $("#xaingmu").text(parentP.name)
+                                var pli=$("<li>");
+                                var a=$("<a>").attr("data-toggle","collapse").attr("href","#sub"+i).text(parentP.name);
+                                var sp=$("<span>").attr("class","glyphicon glyphicon-menu-right pull-right");
+                                a.append(sp);
+                                pli.append(a);
+                                pul=$("<ul>").attr("class","nav collapse").attr("id","sub"+i);
+                                $.each(childPermissions,function(j,childP){
+                                    $("#add").text(childP.name)
+                                    if(childP.pId==parentP.permissionId){
+                                        var fun=childP.url.substr(childP.url.lastIndexOf("/")+1);
+                                        pul.append($("<li>").append(
+                                            $("<a>").attr("href","javascript:void(0)").text(childP.name).attr("onclick",fun+"('"+childP.url+"')")
+                                        ));
+                                        pli.append(pul);
+                                    }
+                                });
+                                $("#slider-left").append(pli);
+                            });
+                        });
+                })
+        })
+    </script>
+
+
+    <script>
+        function viewRole(url){
+            $.getJSON(url,function(data){
+                $("#data-tb thead").remove();
+                thead=$("<thead>")
+                tr=$("<tr>").append($("<th>").text("角色ID"))
+                            .append($("<th>").text("角色名"))
+                            .append($("<th>").text("操作"));
+                thead.append(tr);
+                $("#data-tb").append(thead);
+                $("#data-tb tbody").remove();
+                tbody=$("<tbody>")
+                $.each(data,function(index,roles){
+                    tr1=$("<tr>").append($("<td>").text(roles.rolesId))
+                                 .append($("<td>").text(roles.roleName));
+                    tdc1=$("<td>").html('<a href="javascript:void(0)" onclick="deleteRole(this)">删除</a>&nbsp;' +
+                        '<a href="javascript:void(0)" onclick="updateRole(this)">修改</a>&nbsp;'+
+                        '<a href="javascript:void(0)" onclick="modiRole(this)">授权</a>');
+                    tr1.append(tdc1);
+                    tbody.append(tr1);
+                });
+                $("#data-tb").append(tbody);
+                /*button1=$("<button>").html('<a href="javascript:void(0)" onclick="modiRole()">添加角色</a>');*/
+                $(".panel-body").append(button1)
+            });
+        }
+    </script>
+
+
+    <style>
+        .nav-ul-right{
+            min-width: 250px;
+        }
+
+       /* 768手机端的宽度*/
+        @media (min-width: 768px) {
+            #slider-left{
+                background-color: #3c3c3c;
+                width: 235px;
+                height: 600px;
+                position: absolute;
+                left:0;
+                top: 60px;
+            }
+        }
+
+        .navbar{
+            background-color: #b9def0;
+            border-bottom: 1px solid #c3bad7;
+            height: 60px;
+            position: relative;
+        }
+
+        .collapse{
+            background-color: #faf2cc;
+        }
+
+        #leftbar{
+            margin-top:50px;
+        }
+
+        .page_main{
+            margin-left: 250px;
+        }
+
+        #saveUser{
+            width: 500px;
+            border: 3px solid #e7e7e7;
+            display: none;
+        }
+
+        #updateUser{
+            display: none;
+        }
+
+    </style>
+</head>
+
+<body>
+<nav class="navbar navbar-inverse">
+    <div id="myHead" class="container-fluid">
+        <div class="navbar-header">
+            <button class="navbar-toggle" data-toggle="collapse" data-target="#slider-left">
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+            </button>
+            <a href="#" class="navbar-brand">商城后台管理</a>
+        </div>
+        <ul class="nav navbar-nav navbar-right nav-ul-right">
+            <li class="col-xs-6"><a href="#"><span id="username" class="text-info"></span></a></li>
+            <li class="col-xs-6"><a href="#"><span class="glyphicon glyphicon-off">注销</span></a></li>
+        </ul>
+    </div>
+    <div id="leftbar" class="navbar-default navbar-collapse">
+        <ul class="nav" id="slider-left">
+            <!--<li>
+                <a href="#sub1" data-toggle="collapse">系统功能
+                    <span class="glyphicon glyphicon-menu-right pull-right"></span>
+                </a>
+                <ul class="nav collapse" id="sub1">
+                    <li><a href="#"><span class="glyphicon glyphicon-list-alt"></span>系统信息</a></li>
+                    <li><a href="#"><span class=""></span>管理员信息</a></li>
+                    <li><a href="#"><span class=""></span>日志信息</a></li>
+                    <li><a href="#"><span class=""></span>退出</a></li>
+                </ul>
+            </li>-->
+        </ul>
+    </div>
+
+    <div class="page_main">
+        <ol class="breadcrumb">
+            <li><a href="#">商城后台管理首页</a></li>
+            <li><a href="#"><span id="xaingmu"></span></a></li>
+            <li><a href="#"><span id="add"></span></a></li>
+        </ol>
+        <div class="row">
+            <div class="col-md-12">
+                <div class="panel panel-default">
+                    <div class="panel-heading">最新订单</div>
+                    <div class="panel-body">
+                        <table id="data-tb" class="table table-striped table-hover table-bordered">
+                            <thead>
+                            <tr>
+                                <th>用户ID</th>
+                                <th>用户名</th>
+                                <th>用户角色</th>
+                                <th>操作</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <tr>
+                                <td>123456</td>
+                                <td>88</td>
+                                <td>88</td>
+                                <td>88</td>
+                            </tr>
+                            <tr>
+                                <td>89076</td>
+                                <td>987</td>
+                                <td>987</td>
+                                <td>987</td>
+                            </tr>
+                            </tbody>
+                        </table>
+                       <!-- <button type="button" class="btn btn-default pull-right" onclick="addUserBtn()">添加用户</button>-->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <nav aria-label="Page navigation">
+            <ul class="pagination pull-right">
+                <li><a href="javascript:void(0)" onclick="">首页</a></li>
+                <li>
+                    <a href="#" aria-label="Previous">
+                        <span aria-hidden="true">&laquo;</span>
+                    </a>
+                </li>
+                <li><a href="#">2</a></li>
+                <li><a href="#">3</a></li>
+                <li><a href="#">4</a></li>
+                <li><a href="#">5</a></li>
+                <li>
+                    <a href="#" aria-label="Next">
+                        <span aria-hidden="true">&raquo;</span>
+                    </a>
+                </li>
+                <li><a href="javascript:void(0)">尾页</a></li>
+            </ul>
+        </nav>
+        <br>
+
+        <div id="saveUser">
+            <h1 style="font-size: 25px;margin-left: 100px">添加用户</h1>
+            <form action="/user/addUser" class="form-horizontal"  id="form" method="POST">
+                <div class="form-group">
+                    <label for="username" class="col-sm-2 control-label"></label>
+                    <div class="col-sm-4">
+                        <input type="text" class="form-control" id="addUsername" name="username" placeholder="username"><br>
+                    </div>
+                </div>
+                <button id="conSave" type="button" class="btn btn-default" style="margin-left: 100px;">保存</button>
+                <button id="cancel" type="button" class="btn btn-default" onclick="cancelBtn()">取消</button>
+            </form>
+        </div>
+
+        <div id="updateUser" style="border: 2px solid  #e7e7e7; width: 500px;">
+            <h1 style="font-size: 25px;margin-left: 100px">修改用户信息</h1>
+            <form  id="upForm" >
+                <div class="form-group">
+                    <label for="username" class="col-sm-2 control-label"></label>
+                    <div class="col-sm-4">
+                        <input type="hidden" name="usersId" id="usersId" class="form-control"><br>
+                        <input type="text" class="form-control" id="updateUsername" name="username" placeholder="username"><br>
+                    </div>
+                </div><br>
+                <button id="conUpdate" type="button" class="btn btn-default" style="margin-left: 20px;">修改</button>
+                <button id="cancelUpdate" type="button" class="btn btn-default" onclick="cancelBtn()">取消</button>
+                <br>
+            </form>
+        </div>
+    </div>
+</nav>
+</body>
+</html>
+
